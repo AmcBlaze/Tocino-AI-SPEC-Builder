@@ -27,7 +27,7 @@ export default function Home() {
       </div>
 
       <footer className="mt-16 text-center text-xs text-slate-400 font-mono tracking-wider">
-        version 1.0 - update 19-05-2026 20:31
+        version 1.1 - update 20-05-2026 18:25
       </footer>
     </div>
   );

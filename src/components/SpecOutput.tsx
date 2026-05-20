@@ -24,6 +24,8 @@ interface SpecOutputProps {
 export default function SpecOutput({ spec }: SpecOutputProps) {
   const [copied, setCopied] = useState(false);
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [exported, setExported] = useState(false);
+  const [pdfExporting, setPdfExporting] = useState(false);
 
   const getFeaturesText = () => (spec.features || []).map((f) => `- ${f}`).join("\n");
   const getFlowsText = () => (spec.flows || []).map((f) => `${f.name}\n${f.steps.map((s, i) => `  ${i + 1}. ${s}`).join("\n")}\n  Error: ${f.error_path}`).join("\n\n");
@@ -52,6 +54,268 @@ ${spec.requirements || ""}
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExportMarkdown = () => {
+    const getFeaturesMd = () => (spec.features || []).map((f) => `- ${f}`).join("\n");
+    const getFlowsMd = () =>
+      (spec.flows || [])
+        .map(
+          (f) =>
+            `### ${f.name}\n\n**Pasos del flujo:**\n${f.steps
+              .map((s, i) => `${i + 1}. ${s}`)
+              .join("\n")}${
+              f.error_path ? `\n\n**Flujo alternativo / Error:**\n${f.error_path}` : ""
+            }`
+        )
+        .join("\n\n---\n\n");
+
+    // Generar un título limpio para el archivo
+    const titleSeed = spec.vision ? spec.vision.split(/[.\n]/)[0] : "especificacion";
+    const sanitizedTitle = titleSeed
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Eliminar acentos
+      .replace(/[^a-z0-9]+/g, "-")      // Cambiar caracteres no alfanuméricos por guiones
+      .replace(/(^-|-$)+/g, "")       // Eliminar guiones sobrantes
+      .substring(0, 50);
+
+    const markdownText = `# Especificación Técnica: ${titleSeed.substring(0, 80)}
+
+## 1. Visión del Producto
+${spec.vision || "*No especificada*"}
+
+## 2. Usuarios Objetivo
+${spec.users || "*No especificados*"}
+
+## 3. Funcionalidades Principales
+${spec.features && spec.features.length > 0 ? getFeaturesMd() : "*No especificadas*"}
+
+## 4. Flujos de Usuario
+${spec.flows && spec.flows.length > 0 ? getFlowsMd() : "*No especificados*"}
+
+## 5. Arquitectura Técnica
+${spec.architecture || "*No especificada*"}
+
+## 6. Requisitos Técnicos
+${spec.requirements || "*No especificados*"}
+`.trim();
+
+    const blob = new Blob([markdownText], { type: "text/markdown;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `especificacion-${sanitizedTitle || "tecnica"}.md`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setExported(true);
+    setTimeout(() => setExported(false), 2000);
+  };
+
+  const handleExportPDF = () => {
+    const titleSeed = spec.vision ? spec.vision.split(/[.\n]/)[0] : "Especificación Técnica";
+    const projectName = titleSeed.substring(0, 80);
+
+    const featuresHtml = (spec.features || [])
+      .map((f) => `<li>${f}</li>`)
+      .join("");
+
+    const flowsHtml = (spec.flows || [])
+      .map(
+        (f, idx) => `
+        <div class="flow-card">
+          <h3>${idx + 1}. ${f.name}</h3>
+          <strong>Pasos del flujo:</strong>
+          <ol>
+            ${f.steps.map((s) => `<li>${s}</li>`).join("")}
+          </ol>
+          ${
+            f.error_path
+              ? `<div class="error-path"><strong>Flujo alternativo / Error:</strong> ${f.error_path}</div>`
+              : ""
+          }
+        </div>
+      `
+      )
+      .join("");
+
+    // Create a temporary hidden iframe for printing
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (!doc) {
+      console.error("No se pudo acceder al documento del iframe");
+      return;
+    }
+
+    setPdfExporting(true);
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Especificación Técnica - ${projectName}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 20mm;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+          }
+          h1 {
+            font-size: 24px;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-top: 0;
+            margin-bottom: 24px;
+          }
+          h2 {
+            font-size: 18px;
+            color: #1e3a8a;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+            page-break-after: avoid;
+          }
+          h3 {
+            font-size: 14px;
+            color: #1e293b;
+            margin-top: 0;
+            margin-bottom: 8px;
+          }
+          p {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 13px;
+          }
+          ul, ol {
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-left: 20px;
+            font-size: 13px;
+          }
+          li {
+            margin-bottom: 4px;
+          }
+          .flow-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background-color: #f8fafc;
+            page-break-inside: avoid;
+          }
+          .error-path {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e2e8f0;
+            font-size: 12px;
+            color: #b45309;
+          }
+          .section-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 16px;
+            font-size: 13px;
+          }
+          .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+          }
+          @media print {
+            .flow-card {
+              background-color: #f8fafc !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            .section-box {
+              background-color: #f8fafc !important;
+              border-left: 4px solid #3b82f6 !important;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Especificación Técnica: ${projectName}</h1>
+        
+        <h2>1. Visión del Producto</h2>
+        <div class="section-box">
+          ${spec.vision || "No especificada"}
+        </div>
+
+        <h2>2. Usuarios Objetivo</h2>
+        <div class="section-box" style="border-left-color: #10b981;">
+          ${spec.users || "No especificados"}
+        </div>
+
+        <h2>3. Funcionalidades Principales</h2>
+        <ul>
+          ${featuresHtml || "<li>No especificadas</li>"}
+        </ul>
+
+        <h2>4. Flujos de Usuario</h2>
+        <div class="flows-container">
+          ${flowsHtml || "<p>No especificados</p>"}
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <h2>5. Arquitectura Técnica</h2>
+            <div class="section-box" style="border-left-color: #8b5cf6;">
+              ${spec.architecture || "No especificada"}
+            </div>
+          </div>
+          <div>
+            <h2>6. Requisitos Técnicos</h2>
+            <div class="section-box" style="border-left-color: #f43f5e;">
+              ${spec.requirements || "No especificados"}
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+        setPdfExporting(false);
+      }, 1000);
+    }, 500);
   };
 
   const handleCopySection = (text: string, sectionId: string) => {
@@ -105,7 +369,7 @@ ${spec.requirements || ""}
   const CopyFullButton = () => (
     <button
       onClick={handleCopy}
-      className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-200"
+      className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-200 active:scale-[0.98]"
     >
       {copied ? (
         <>
@@ -115,7 +379,49 @@ ${spec.requirements || ""}
       ) : (
         <>
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-          <span>Copiar especificación completa</span>
+          <span>Copiar completa</span>
+        </>
+      )}
+    </button>
+  );
+
+  const ExportButton = () => (
+    <button
+      onClick={handleExportMarkdown}
+      className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-all focus:ring-4 focus:ring-emerald-100 shadow-sm shadow-emerald-600/10 hover:shadow-md hover:shadow-emerald-600/20 active:scale-[0.98]"
+    >
+      {exported ? (
+        <>
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          <span>¡Descargado!</span>
+        </>
+      ) : (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <span>Exportar a Markdown</span>
+        </>
+      )}
+    </button>
+  );
+
+  const ExportPDFButton = () => (
+    <button
+      onClick={handleExportPDF}
+      disabled={pdfExporting}
+      className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-medium rounded-lg transition-all focus:ring-4 focus:ring-indigo-100 shadow-sm shadow-indigo-600/10 hover:shadow-md hover:shadow-indigo-600/20 active:scale-[0.98] disabled:cursor-not-allowed"
+    >
+      {pdfExporting ? (
+        <>
+          <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Preparando PDF...</span>
+        </>
+      ) : (
+        <>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+          <span>Exportar a PDF</span>
         </>
       )}
     </button>
@@ -124,8 +430,10 @@ ${spec.requirements || ""}
   return (
     <div className="w-full bg-white shadow-xl shadow-slate-200/50 border border-slate-200 rounded-2xl p-6 md:p-10 animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-10">
       
-      {/* ACTION BUTTON (TOP) */}
-      <div className="flex justify-end border-b border-slate-100 pb-6 mb-6">
+      {/* ACTION BUTTONS (TOP) */}
+      <div className="flex flex-col sm:flex-row justify-end gap-3 border-b border-slate-100 pb-6 mb-6">
+        <ExportPDFButton />
+        <ExportButton />
         <CopyFullButton />
       </div>
 
@@ -245,8 +553,10 @@ ${spec.requirements || ""}
         </div>
       </div>
 
-      {/* ACTION BUTTON (BOTTOM) */}
-      <div className="pt-8 flex justify-center border-t border-slate-100">
+      {/* ACTION BUTTONS (BOTTOM) */}
+      <div className="pt-8 flex flex-col sm:flex-row justify-center gap-3 border-t border-slate-100">
+        <ExportPDFButton />
+        <ExportButton />
         <CopyFullButton />
       </div>
 

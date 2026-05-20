@@ -146,4 +146,8 @@ Esta es la sección más importante: define los límites del producto y protege 
 | **Templates o specs prediseñadas** | El valor está en la generación dinámica, no en plantillas estáticas |
 | **Estimaciones de costo o tiempo de desarrollo** | Requiere lógica de negocio compleja y datos externos; fuera del scope |
 
+### Features
+Exportar como Markdown
+Exportar como PDF
+
 La regla de oro para este proyecto: **si no está en los casos de uso definidos, no se construye.** Cualquier feature nueva pasa primero por validación con usuarios reales.
