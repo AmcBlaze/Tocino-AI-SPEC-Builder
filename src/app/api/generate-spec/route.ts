@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     // Parse the request body
     const body = await req.json();
     const { prompt } = body;
+    GEMINI_API_KEY = AIzaSyCbGXE4Nx83GW - 0xwDX5lU9CeIqhPh18cc
 
     // Validate the input
     if (!prompt || typeof prompt !== "string") {
