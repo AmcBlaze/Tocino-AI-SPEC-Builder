@@ -121,9 +121,10 @@ CRITICAL SECURITY RULES:
 Given the product idea provided by the user, generate a complete technical specification as a JSON object.
 
 IMPORTANT: Respond with the raw JSON object directly — no wrapper keys, no markdown fences, no extra text.
-The root object must have exactly these 6 keys in this format:
+The root object must have exactly these 7 keys in this format:
 
 {"success":true,"spec":{
+  "title": "<short, extremely descriptive 2-4 word project title in Spanish, e.g., 'App Tipo Uber' or 'Agencia de Viajes'>",
   "vision": "<string, 2-4 sentences describing the product vision, core purpose, and value proposition>",
   "users": "<string, 2-4 sentences describing the target users, their context, and their main pain points>",
   "features": [
@@ -144,6 +145,7 @@ The root object must have exactly these 6 keys in this format:
 Rules:
 - features: array of strings, 5–8 items, each starting with 'El usuario puede' or 'El sistema permite'.
 - flows: array of objects, 3–5 items. Each object must have exactly: name (string), steps (array of strings with the happy-path steps in order), error_path (string describing what happens if the flow fails).
+- title: plain string of exactly 2-4 words, capitalized (e.g. 'Agencia de Viajes').
 - vision, users, architecture, requirements: plain strings of exactly 2–4 sentences — not one line, not a long paragraph.
 - Output only the JSON object. No wrapper object, no extra keys, no explanation.
 
@@ -188,9 +190,10 @@ IMPORTANT: Return the JSON object directly. Do NOT wrap it in any parent key lik
       specData = structuredSpec.spec;
     }
 
-    const requiredKeys = ["vision", "users", "features", "flows", "architecture", "requirements"];
+    const requiredKeys = ["title", "vision", "users", "features", "flows", "architecture", "requirements"];
     const hasAllKeys = requiredKeys.every(key => key in specData);
     const hasValidTypes = hasAllKeys &&
+      typeof specData.title === "string" &&
       typeof specData.vision === "string" &&
       typeof specData.users === "string" &&
       Array.isArray(specData.features) &&

@@ -27,9 +27,26 @@ export default function Home() {
     setSpecResult(spec);
     setSelectedId(null); // Clear selected state for newly generated spec
 
-    // Extract project name from the vision statement
-    const titleSeed = spec.vision ? spec.vision.split(/[.\n]/)[0] : "Especificación Técnica";
-    const projectName = titleSeed.substring(0, 50).trim() || "Proyecto sin nombre";
+    // Get a short and descriptive project name
+    let projectName = "Proyecto sin nombre";
+    if (spec.title && typeof spec.title === "string") {
+      projectName = spec.title.trim();
+    } else {
+      const titleSeed = spec.vision ? spec.vision.split(/[.\n]/)[0] : "Especificación Técnica";
+      // Remove common introductory filler phrases in Spanish
+      let cleaned = titleSeed
+        .replace(/^(esta\s+aplicación\s+(móvil|web)?\s+(busca|es|pretende|quiere|permite|se\s+centra|consiste|sirve)\s+(para\s+)?)/i, "")
+        .replace(/^(este\s+(sistema|producto|software|saas|proyecto)\s+(busca|es|pretende|quiere|permite|se\s+centra|consiste|sirve)\s+(para\s+)?)/i, "")
+        .replace(/^(el\s+producto\s+(es|busca|pretende|quiere|permite)\s+(una\s+plataforma|un\s+sistema|un\s+saas|una\s+app|para\s+)?)/i, "")
+        .replace(/^(plataforma\s+para\s+)/i, "")
+        .replace(/^(aplicación\s+para\s+)/i, "")
+        .trim();
+      
+      if (cleaned.length > 0) {
+        cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+      }
+      projectName = cleaned.substring(0, 35) || "Especificación Técnica";
+    }
 
     const newItem: HistoryItem = {
       id: Date.now().toString(),
@@ -152,7 +169,24 @@ export default function Home() {
               </p>
             </div>
 
-            <SpecForm onResult={handleResult} />
+            {!selectedId ? (
+              <SpecForm onResult={handleResult} />
+            ) : (
+              <div className="flex justify-center pb-2 animate-in fade-in duration-300">
+                <button
+                  onClick={() => {
+                    setSelectedId(null);
+                    setSpecResult(null);
+                  }}
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow-md transition-all hover:scale-[1.01] active:scale-[0.99] hover:shadow-lg focus:ring-4 focus:ring-blue-100"
+                >
+                  <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Crear Nueva Especificación</span>
+                </button>
+              </div>
+            )}
 
             {specResult && (
               <SpecOutput spec={specResult} />
