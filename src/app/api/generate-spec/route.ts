@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { auth } from "@clerk/nextjs/server";
 
 // Initialize the Google Generative AI SDK
 const apiKey = process.env.GEMINI_API_KEY || "";
@@ -11,6 +12,14 @@ const LIMIT = 5;
 const WINDOW_MS = 60 * 1000; // 1 minute
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json(
+      { error: "No autorizado. Inicie sesión para generar especificaciones." },
+      { status: 401 }
+    );
+  }
+
   // Get client IP address
   let ip = (req as any).ip || req.headers.get("x-forwarded-for") || "127.0.0.1";
   if (ip.includes(",")) {

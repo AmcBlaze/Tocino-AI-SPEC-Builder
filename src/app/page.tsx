@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { UserButton } from "@clerk/nextjs";
 import SpecForm from "@/components/SpecForm";
 import SpecOutput from "@/components/SpecOutput";
 import HistorySidebar, { HistoryItem } from "@/components/HistorySidebar";
@@ -151,9 +152,12 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-xs font-semibold text-slate-500 tracking-wider font-mono">ONLINE</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="text-xs font-semibold text-slate-500 tracking-wider font-mono">ONLINE</span>
+            </div>
+            <UserButton />
           </div>
         </header>
 

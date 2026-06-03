@@ -149,5 +149,6 @@ Esta es la sección más importante: define los límites del producto y protege 
 ### Features
 Exportar como Markdown
 Exportar como PDF
-
+Historial de specs guardadas
+Login con Clerk
 La regla de oro para este proyecto: **si no está en los casos de uso definidos, no se construye.** Cualquier feature nueva pasa primero por validación con usuarios reales.
