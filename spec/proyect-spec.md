@@ -151,4 +151,6 @@ Exportar como Markdown
 Exportar como PDF
 Historial de specs guardadas
 Login con Clerk
+HomePage publica
+
 La regla de oro para este proyecto: **si no está en los casos de uso definidos, no se construye.** Cualquier feature nueva pasa primero por validación con usuarios reales.
